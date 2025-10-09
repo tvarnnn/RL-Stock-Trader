@@ -32,32 +32,38 @@ class StockTradingEnv(gym.Env):
         price = float(self.df.loc[self.current_step, 'Close'])
         return np.array([price, self.balance, self.shares_held], dtype=np.float32)
 
-    def step(self, action): # Executes 1 action in the environment
-        price = float(self.df.loc[self.current_step, 'Close']) # Current price
+    def step(self, action):
+        price = float(self.df.loc[self.current_step, 'Close'])
+
+        # Default penalty/reward
+        reward = 0
 
         # Executable actions
-        if action == 1: # Buying action
-            # buy as many possible shares
+        if action == 1:  # Buy
             max_shares = int(self.balance / price)
-            self.balance -= max_shares * price
-            self.shares_held += max_shares
+            if max_shares > 0:
+                self.balance -= max_shares * price
+                self.shares_held += max_shares
+            else:
+                reward -= 10  # Penalty for trying to buy without enough balance
 
-        elif action == 2: # Selling action
-            self.balance += self.shares_held * price
-            self.shares_held = 0
+        elif action == 2:  # Sell
+            if self.shares_held > 0:
+                self.balance += self.shares_held * price
+                self.shares_held = 0
+            else:
+                reward -= 10  # Penalty for trying to sell with no shares
 
-        self.networth = self.balance +self.shares_held * price # Net worth
+        # Update net worth
+        prev_networth = self.networth
+        self.networth = self.balance + self.shares_held * price
 
-        if self.current_step == 0: # Reward for changes in net worth
-            reward = 0
-        else:
-            prev_price = float(self.df.loc[self.current_step-1, 'Close'])
-            prev_networth = self.balance + self.shares_held * prev_price
-            reward = self.networth - prev_networth
+        # Reward proportional to % change in net worth
+        pct_change = (self.networth - prev_networth) / prev_networth if prev_networth != 0 else 0
+        reward += pct_change * 100  # scale factor to keep rewards visible
 
         # Next step
         self.current_step += 1
         done = self.current_step >= self.max_steps
 
-        # Return Observation, reward, done, info
         return self._get_obs(), reward, done, {}

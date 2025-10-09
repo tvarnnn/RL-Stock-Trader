@@ -1,7 +1,12 @@
 import matplotlib.pyplot as plt
+import torch
 from scripts.Data_loader import StockDataLoader
 from envs.stock_envV2 import StockEnvV2
 from models.dqn_agentV2 import DQNAgent
+
+# Use GPU if available, otherwise fallback to CPU
+device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
+
 
 # Load stock data
 loader = StockDataLoader("TSLA", start="2015-01-01", end="2025-01-01")
@@ -16,11 +21,11 @@ test_env = StockEnvV2(test_data)
 state_size = train_env.observation_space.shape[0]  # 6 now in StockEnvV2
 action_size = train_env.action_space.n
 
-# Initialize agent
-agent = DQNAgent(state_size, action_size)
+# Initialize agent and pass the device to ensure GPU usage
+agent = DQNAgent(state_size, action_size, device=device)
 
 # Training loop parameters
-episodes = 100
+episodes = 1000
 batch_size = 32
 net_worth_history = []
 test_worth_history = []
@@ -34,6 +39,7 @@ for e in range(episodes):
 
     while not done:
         step += 1
+        # Choose action using DQN agent (already uses GPU if available)
         action = agent.act(state)
         next_state, reward, done, _ = train_env.step(action)
 

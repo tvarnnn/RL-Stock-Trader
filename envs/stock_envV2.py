@@ -4,13 +4,13 @@ import numpy as np
 import random
 
 """
-improved stock environment for RL
+Improved stock environment for RL
     Added:
-    -Expanded state (price, moving averages, balances, shares held, momentum
-    -Reward shaping
-    -Transaction fees
-    -Normalized inputs
-    -Randomized episode start
+    - Expanded state (price, moving averages, balances, shares held, momentum)
+    - Reward shaping
+    - Transaction fees
+    - Normalized inputs
+    - Randomized episode start
 """
 class StockEnvV2(gym.Env):
 

@@ -1,27 +1,33 @@
 import matplotlib.pyplot as plt
 import torch
-from scripts.Data_loader import StockDataLoader
-from envs.stock_envV2 import StockEnvV2
+import itertools
+from scripts.Data_loaderV2 import MultiStockDataLoader
+from envs.stock_envV3 import StockEnvV3  # Updated multi-stock environment
 from models.dqn_agentV2 import DQNAgent
 
 # Use GPU if available, otherwise fallback to CPU
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
-
-# Load stock data
-loader = StockDataLoader("TSLA", start="2015-01-01", end="2025-01-01")
+# Load multi-stock data
+tickers = ["TSLA", "AAPL", "AMZN"]
+loader = MultiStockDataLoader(tickers)
 train_data, test_data = loader.get_train_test()
-print("Data loaded. Sample:")
-print(train_data.head())
 
 # Initialize environments
-train_env = StockEnvV2(train_data)
-test_env = StockEnvV2(test_data)
 
-state_size = train_env.observation_space.shape[0]  # 6 now in StockEnvV2
-action_size = train_env.action_space.n
+# Pass a list of DataFrames to StockEnvV3
+train_env = StockEnvV3(list(train_data.values()))
+test_env = StockEnvV3(list(test_data.values()))
 
-# Initialize agent and pass the device to ensure GPU usage
+state_size = train_env.observation_space.shape[0]  # State vector size
+
+# Flatten MultiDiscrete action space
+
+# Generate all possible combinations of actions for N stocks
+action_list = list(itertools.product([0, 1, 2], repeat=len(tickers)))
+action_size = len(action_list)  # Total discrete actions = 3^N
+
+# Initialize DQN agent
 agent = DQNAgent(state_size, action_size, device=device)
 
 # Training loop parameters
@@ -39,15 +45,20 @@ for e in range(episodes):
 
     while not done:
         step += 1
-        # Choose action using DQN agent (already uses GPU if available)
-        action = agent.act(state)
-        next_state, reward, done, _ = train_env.step(action)
+        # Choose action index using DQN agent (epsilon-greedy)
+        action_idx = agent.act(state)
+        # Map discrete index to multi-stock action vector
+        actions = action_list[action_idx]
 
-        if action != 0:  # If buying or selling
+        # Take step in environment
+        next_state, reward, done, _ = train_env.step(actions)
+
+        # Penalize transaction slightly if buying or selling
+        if any(a != 0 for a in actions):
             reward *= 0.99
 
-        # Remember experience for replay
-        agent.remember(state, action, reward, next_state, done)
+        # Store experience in replay buffer
+        agent.remember(state, action_idx, reward, next_state, done)
         state = next_state
         total_reward += reward
 
@@ -64,8 +75,9 @@ for e in range(episodes):
     test_done = False
     test_total = 0
     while not test_done:
-        test_action = agent.act(test_state)
-        test_state, reward, test_done, _ = test_env.step(test_action)
+        test_action_idx = agent.act(test_state)
+        test_actions = action_list[test_action_idx]
+        test_state, reward, test_done, _ = test_env.step(test_actions)
         test_total += reward
 
     net_worth_history.append(train_env.networth)

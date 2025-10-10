@@ -2,22 +2,22 @@ import matplotlib.pyplot as plt
 import torch
 import itertools
 from scripts.Data_loaderV2 import MultiStockDataLoader
-from envs.stock_envV3 import StockEnvV3  # Updated multi-stock environment
-from models.dqn_agentV2 import DQNAgent
+from envs.stock_envV5 import StockEnvV5  # Reward system overhaul
+from models.dqn_agentV3 import DQNAgent
 
 # Use GPU if available, otherwise fallback to CPU
 device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
 # Load multi-stock data
-tickers = ["TSLA", "AAPL", "AMZN"]
+tickers = ["TSLA", "AAPL", "AMZN", "GOOG"]
 loader = MultiStockDataLoader(tickers)
 train_data, test_data = loader.get_train_test()
 
 # Initialize environments
 
 # Pass a list of DataFrames to StockEnvV3
-train_env = StockEnvV3(list(train_data.values()))
-test_env = StockEnvV3(list(test_data.values()))
+train_env = StockEnvV5(list(train_data.values()))
+test_env = StockEnvV5(list(test_data.values()))
 
 state_size = train_env.observation_space.shape[0]  # State vector size
 
@@ -32,7 +32,7 @@ agent = DQNAgent(state_size, action_size, device=device)
 
 # Training loop parameters
 episodes = 1000
-batch_size = 32
+batch_size = 256
 net_worth_history = []
 test_worth_history = []
 

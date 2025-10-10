@@ -1,8 +1,57 @@
-# Default ignored files
-/shelf/
-/workspace.xml
-# Editor-based HTTP Client requests
-/httpRequests/
-# Datasource local storage ignored files
+# Python virtual environments
+.venv/
+.venv1/
+.venv_gpu/
+venv/
+env/
+
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Binary / compiled libraries
+*.dll
+*.so
+*.dylib
+
+# Build / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# IDE-specific files (PyCharm)
+.shelf/
+workspace.xml
+.httpRequests/
+
+# Local datasource or config files
 /dataSources/
-/dataSources.local.xml
+.dataSources.local.xml
+
+# Optional: logs, temp, or OS files
+*.log
+*.tmp
+*.DS_Store
+
+# ===== RL / ML specific additions =====
+# Data
+data/
+*.csv
+*.parquet
+*.h5
+*.pkl
+
+# Trained models / checkpoints
+models/
+*.pt
+*.pth
+
+# Logs / tensorboard
+logs/
+runs/
